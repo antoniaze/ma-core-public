@@ -4,7 +4,6 @@
  */
 package com.serotonin.m2m2.web.mvc.spring.authentication;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -14,7 +13,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.serotonin.m2m2.Common;
 import com.serotonin.m2m2.db.dao.UserDao;
@@ -32,33 +30,28 @@ public class MangoUserAuthenticationProvider implements AuthenticationProvider{
 	@Override
 	public Authentication authenticate(Authentication authentication)
 			throws AuthenticationException {
+	    
+	    if (!(authentication instanceof UsernamePasswordAuthenticationToken)) {
+            return null;
+        }
 		
-		User u = UserDao.instance.getUser(authentication.getName());
-		if(u == null)
+		User user = UserDao.instance.getUser(authentication.getName());
+		if(user == null)
 			throw new BadCredentialsException(Common.translate("login.validation.invalidLogin"));
 		
-		if(u.isDisabled())
+		if(user.isDisabled())
 			throw new DisabledException(Common.translate("login.validation.accountDisabled"));
 		
 		//Do Login
-		u = Common.loginManager.performLogin(authentication.getName(), (String)authentication.getCredentials(), false);
+		user = Common.loginManager.performLogin(authentication.getName(), (String)authentication.getCredentials(), false);
 		
-		if(u == null)
+		if(user == null)
 			throw new BadCredentialsException(Common.translate("login.validation.invalidLogin"));
 		
-		//TODO Create a new Token
-		//TODO Setup Spring Security to accept our Roles as is (ie. new Voter)
-		String [] roles = u.getPermissions().split(",");
-		List<GrantedAuthority> permissions = new ArrayList<GrantedAuthority>(roles.length);
-		
-		for (String role : roles) {
-			permissions.add(new SimpleGrantedAuthority(role));
-		}
-		if(u.isAdmin())
-			permissions.add(new SimpleGrantedAuthority("ADMIN"));
-		
+		List<GrantedAuthority> authorities = MangoUserDetailsService.generateGrantedAuthorities(user);
+
 		//Set User object as the Principle in our Token
-		return new UsernamePasswordAuthenticationToken(u, u.getPassword(), permissions);
+		return new UsernamePasswordAuthenticationToken(user, user.getPassword(), authorities);
 	}
 
 	/* (non-Javadoc)
@@ -66,8 +59,7 @@ public class MangoUserAuthenticationProvider implements AuthenticationProvider{
 	 */
 	@Override
 	public boolean supports(Class<?> authentication) {
-		//TODO Expand on this later to support multiple Authentication Types
-		return true;
+	    return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
 	}
 
 }

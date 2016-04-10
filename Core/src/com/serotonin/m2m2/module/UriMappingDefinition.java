@@ -1,10 +1,15 @@
 package com.serotonin.m2m2.module;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.serotonin.m2m2.vo.User;
 import com.serotonin.m2m2.vo.permission.PermissionException;
 import com.serotonin.m2m2.web.mvc.UrlHandler;
 
 abstract public class UriMappingDefinition extends ModuleElementDefinition {
+    private static final Log LOG = LogFactory.getLog(UriMappingDefinition.class);
+    
     public enum Permission {
         ANONYMOUS, //Anyone
         USER, //Mango User
@@ -18,7 +23,29 @@ abstract public class UriMappingDefinition extends ModuleElementDefinition {
      * 
      * @return the required authority level.
      */
-    abstract public Permission getPermission();
+    @Deprecated
+    public Permission getPermission() {
+        return null;
+    }
+    
+    public String[] requirePermissions() {
+        Permission perm = getPermission();
+        if (perm == null)
+            return new String[] {"IS_AUTHENTICATED_REMEMBERED"};
+        switch(perm) {
+        case CUSTOM:
+            LOG.warn(this.getClass() + " requested CUSTOM permission, defaulting to ROLE_ADMIN");
+        case ADMINISTRATOR:
+            return new String[] {"ROLE_ADMIN"};
+        case ANONYMOUS:
+            return new String[] {"IS_AUTHENTICATED_ANONYMOUSLY"};
+        case DATA_SOURCE:
+            return new String[] {"DATA_SOURCE"};
+        case USER:
+        default:
+            return new String[] {"IS_AUTHENTICATED_REMEMBERED"};
+        }
+    }
 
     /**
      * The URI path to which this controller responds. Required.
@@ -51,6 +78,7 @@ abstract public class UriMappingDefinition extends ModuleElementDefinition {
 	 * @param user
 	 * @return
 	 */
+    @Deprecated
 	public boolean hasCustomPermission(User user) throws PermissionException{
 		return false;
 	}

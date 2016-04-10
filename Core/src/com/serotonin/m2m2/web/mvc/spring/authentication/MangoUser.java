@@ -5,10 +5,10 @@
 package com.serotonin.m2m2.web.mvc.spring.authentication;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.serotonin.m2m2.vo.User;
@@ -17,7 +17,7 @@ import com.serotonin.m2m2.vo.User;
  * @author Terry Packer
  *
  */
-public class MangoUser implements UserDetails{
+public final class MangoUser implements UserDetails{
 
 	/**
 	 * 
@@ -26,12 +26,11 @@ public class MangoUser implements UserDetails{
 	private User user;
 	private List<GrantedAuthority> authorities;
 	
-	public MangoUser(User user){
+	public MangoUser(User user, List<GrantedAuthority> authorities) {
 		this.user = user;
-		//Build the Authorities
-		this.authorities = AuthorityUtils.createAuthorityList(user.getPermissions()); 
+		this.authorities = Collections.unmodifiableList(authorities);
 	}
-	
+	   
 	/* (non-Javadoc)
 	 * @see org.springframework.security.core.userdetails.UserDetails#getAuthorities()
 	 */
