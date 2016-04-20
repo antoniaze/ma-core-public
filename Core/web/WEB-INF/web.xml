@@ -121,14 +121,14 @@
     Filter mappings.
    -->
   <filter-mapping>
-    <filter-name>corsFilter</filter-name>
-    <url-pattern>/rest/*</url-pattern>
-    <url-pattern>/modules/dashboards/web/js/**/*.html</url-pattern>
+    <filter-name>springSecurityFilterChain</filter-name>
+    <url-pattern>/*</url-pattern>
   </filter-mapping>
   
   <filter-mapping>
-    <filter-name>springSecurityFilterChain</filter-name>
-    <url-pattern>/*</url-pattern>
+    <filter-name>corsFilter</filter-name>
+    <url-pattern>/rest/*</url-pattern>
+    <url-pattern>/modules/dashboards/web/js/**/*.html</url-pattern>
   </filter-mapping>
   
   <filter-mapping>
