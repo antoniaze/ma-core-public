@@ -48,8 +48,9 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired
     public void configureAuthenticationManager(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService());
-        auth.authenticationProvider(authenticationProvider());
+        auth.userDetailsService(userDetailsService())
+                .and()
+            .authenticationProvider(authenticationProvider());
     }
     
     @Bean
@@ -62,10 +63,16 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return new MangoUserAuthenticationProvider();
     }
 
-    private static CsrfTokenRepository csrfTokenRepository() {
+    @Bean
+    public CsrfTokenRepository csrfTokenRepository() {
           HttpSessionCsrfTokenRepository repository = new HttpSessionCsrfTokenRepository();
           repository.setHeaderName("X-XSRF-TOKEN");
           return repository;
+    }
+
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return new MangoAccessDeniedHandler();
     }
 
     @Configuration
@@ -73,6 +80,8 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
     public static class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
         @Autowired
         private JwtService jwtService;
+        
+        @Autowired CsrfTokenRepository csrfTokenRepository;
         
         @Override
         protected void configure(HttpSecurity http) throws Exception {
@@ -93,12 +102,11 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
                     .antMatchers(HttpMethod.POST, "/v1/jwt").permitAll()
                     .antMatchers(HttpMethod.OPTIONS).permitAll()
                     .anyRequest().authenticated()
-                    .anyRequest().permitAll()
                     .and()
                 //CSRF Headers https://spring.io/blog/2015/01/12/the-login-page-angular-js-and-spring-security-part-ii
-                .addFilterAfter(new CsrfHeaderFilter(), CsrfFilter.class)
+                //.addFilterAfter(new CsrfHeaderFilter(), CsrfFilter.class)
                 .csrf()
-                    //.csrfTokenRepository(csrfTokenRepository())
+                    //.csrfTokenRepository(csrfTokenRepository)
                     //.and()
                     .disable()
                 .headers()
@@ -115,6 +123,9 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Order(2)
     public static class DefaultSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
+        @Autowired CsrfTokenRepository csrfTokenRepository;
+        @Autowired AccessDeniedHandler accessDeniedHandler;
+        
         private void addModulePermisisons(HttpSecurity http) throws Exception {
             Map<String, String[]> pathToPermission = new HashMap<>();
 
@@ -131,19 +142,14 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 authReq.antMatchers(path).hasAnyAuthority(entry.getValue());
             }
         }
-
-        @Bean
-        public AccessDeniedHandler accessDeniedHandler() {
-            return new MangoAccessDeniedHandler();
-        }
         
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http.sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .and()
             .formLogin()
-                .loginPage("/test-login")
+                //.loginPage("/test-login")
                 .permitAll()
                 .and()
             .logout()
@@ -162,7 +168,6 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET, "/audio/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/swagger/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/exception/*").permitAll()
-                .antMatchers(HttpMethod.GET, "/*").permitAll()
                 //Allow Startup REST Endpoint
                 .antMatchers(HttpMethod.GET, "/status").permitAll()
                 // OPTIONS should be allowed on all
@@ -171,26 +176,24 @@ public class MangoSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET, "/modules/*/web/**").permitAll()
                 .antMatchers("/modules/**").denyAll()
                 // deny direct access to jsp
-                .antMatchers("*.jsp").denyAll()
+                //.antMatchers("*.jsp").denyAll()
                 .anyRequest().authenticated()
-                .anyRequest().permitAll()
                 .and()
-                
             //CSRF Headers https://spring.io/blog/2015/01/12/the-login-page-angular-js-and-spring-security-part-ii
-            .addFilterAfter(new CsrfHeaderFilter(), CsrfFilter.class)
+            //.addFilterAfter(new CsrfHeaderFilter(), CsrfFilter.class)
             .csrf()
-                //.csrfTokenRepository(csrfTokenRepository())
+                //.csrfTokenRepository(csrfTokenRepository)
                 //.and()
                 .disable()
             .exceptionHandling()
-                .accessDeniedHandler(accessDeniedHandler())
+                .accessDeniedHandler(accessDeniedHandler)
                 .and()
             //Customize the headers here
             .headers()
                 .frameOptions().sameOrigin()
                 .and();
             
-            addModulePermisisons(http);
+            //addModulePermisisons(http);
         }
     }
 }

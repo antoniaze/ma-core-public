@@ -20,7 +20,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.serotonin.m2m2.Common;
 import com.serotonin.m2m2.db.dao.UserDao;
 import com.serotonin.m2m2.vo.User;
 import com.serotonin.m2m2.web.mvc.spring.authentication.MangoUserDetailsService;
@@ -72,7 +71,6 @@ public class AuthenticationTokenFilter extends OncePerRequestFilter {
         
         if (authenticationIsRequired(username)) {
             User user = UserDao.instance.getUser(username);
-            Common.setUser(request, user);
 
             List<GrantedAuthority> authorities = MangoUserDetailsService.generateGrantedAuthorities(user);
 
